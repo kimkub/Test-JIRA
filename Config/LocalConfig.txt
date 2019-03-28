@@ -1,0 +1,3 @@
+*** Variables ***
+${general_timeout}    10
+${long_timeout}    60
