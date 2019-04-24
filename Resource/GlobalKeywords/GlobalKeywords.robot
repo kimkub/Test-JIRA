@@ -4,13 +4,17 @@ Library           OperatingSystem
 Library           Collections
 Library           String
 Library           DateTime
-Resource          ../../TC_SP1_Nmae_001.robot
-Resource          ../../TestData/Wordings/EN_Language.robot
-Resource          ../../TestData/Wordings/TH_Language.robot
-Resource          ../../TestData/Wordings/Wordings_EN/EN.robot
-Resource          ../../TestData/Wordings/Wordings_TH/TH.robot
+Resource          Import_Librarys.robot
 
 *** Keywords ***
+Allow Permission
+    Mobile.Click button    @{AllowButton}
+
+Calculates
+    [Arguments]    ${Sentence}
+    ${Return}    Evaluate    ${Sentence}
+    [Return]    ${Return}
+
 Column Data Excel
     [Arguments]    ${ListHeader}    ${CheckHeader}    ${CheckValue}
     ${Int}    Get Index From List    ${ListHeader}    ${CheckHeader}
@@ -21,6 +25,12 @@ Column Data Excel
     \    Run Keyword If    '${ReadData}'=='${CheckValue}'    Run Keywords    Set Test Variable    ${Count}
     \    ...    AND    Exit For Loop
     [Return]    ${Count}
+
+Conditions
+    [Arguments]    ${FirstCondition}    ${Opaeration}    ${FinalCondition}
+    ${Return}    Run Keyword And Ignore Error    Run Keyword If    "${FirstCondition}"${Opaeration}"${FinalCondition}"    Run Keyword    Log To Consoles    "${FirstCondition}"${Opaeration}"${FinalCondition}"
+    ...    ELSE    Run Keyword    Log To Consoles    "${FirstCondition}"${Opaeration}"${FinalCondition}"
+    Should Be Equal    @{Return}[0]    PASS
 
 Conditions Data Excel
     [Arguments]    ${ListData}    @{ListChecking}
@@ -52,127 +62,7 @@ Excel Set Variable
     \    Log To Consoles    <${String}> => @{DATA}[${Index}]
     [Return]    ${Return}
 
-Execute Run
-    [Arguments]    ${Header}    ${INT}
-    : FOR    ${Index}    IN    ${INT}
-    \    ${DATA}    Row Data Excel    ${Index}
-    \    ${Return}    Excel Set Variable    ${Header}    ${DATA}
-    \    Run Keyword If    '${Return}'=='PASS'    Run Keywords    Log Set Variable    ${Header}    ${DATA}
-    \    ...    AND    Exit For Loop
-
-Header Excel
-    ${Header}    Create List
-    : FOR    ${index}    IN RANGE    ${ColumnCount}
-    \    ${ReadData}    Read Cell Data By Coordinates    ${SheetNames}    ${index}    0
-    \    Append To List    ${Header}    ${ReadData}
-    Set Test Variable    ${Header}
-    [Return]    ${Header}
-
-Log Set Variable
-    [Arguments]    ${Header}    ${DATA}
-    [Documentation]    Function get row data for Execute.
-    ${Return}    Create List
-    : FOR    ${Index}    IN RANGE    ${ColumnCount}
-    \    ${String}    Remove String    @{Header}[${Index}]    ${SPACE}
-    \    ${String}    Convert To Lowercase    ${String}
-    \    Log To Consoles    ${String} => '${excel.${String}}'
-
-Open Excel File
-    [Arguments]    ${FileName}
-    ${DirectoryTEMP}    Temp Excel File    ${FileName}
-    Log To Consoles    <<< OPEN EXCLE >>>
-    Log To Consoles    Directory : ${DirectoryTEMP}
-    Open Excel    ${DirectoryTEMP}
-    ${SheetNames}    Get Sheet Names
-    Set Suite Variable    ${SheetNames}    @{SheetNames}[0]
-    ${ColumnCount}    Count Column Data File    ${SheetNames}
-    Set Suite Variable    ${ColumnCount}
-    ${RowCount}    Count Row Data File    ${SheetNames}
-    Set Suite Variable    ${RowCount}
-    Log To Consoles    Sheetname : ${SheetNames}
-    Log To Consoles    Row Count : ${RowCount}
-    Log To Consoles    Column Count : ${ColumnCount}
-    Log To Consoles    ===========================================================================================================
-
-Read Data
-    Log To Consoles    \nStart : Read Row '${TEST_NAME}' Data
-    ${Header}    Header Excel
-    ${INT}    Column Data Excel    ${Header}    TestCaseName    ${TEST_NAME}
-    ${DATA}    Row Data Excel    ${INT}
-    Execute Run    ${Header}    ${INT}
-    Conditions Data Excel    ${DATA}    No Test    Run    PASS    FAIL
-    Log To Consoles    END : Read Row '${TEST_NAME}' Data PASS\n
-
-Row Data Excel
-    [Arguments]    ${arg1}
-    ${DATA}    Create List
-    : FOR    ${index}    IN RANGE    ${ColumnCount}
-    \    ${ReadData}    Read Cell Data By Coordinates    ${SheetNames}    ${index}    ${arg1}
-    \    Append To List    ${DATA}    ${ReadData}
-    Set Test Variable    ${DATA}
-    [Return]    ${DATA}
-
-Temp Excel File
-    [Arguments]    ${arg1}
-    ${DATEFILE}    Get Current Date
-    ${DATEFILE}    Convert Date    ${DATEFILE}    epoch
-    ${DirectoryTestData}    Replace String    ${CURDIR}    Configurations    TestData
-    ${DirectoryTEMP}    Replace String    ${DirectoryTestData}    TestData    Temp
-    Copy File    ${DirectoryTestData}\\${arg1}    ${DirectoryTEMP}\\${DATEFILE}${arg1}
-    Set Suite Variable    ${DirectoryTestData}    ${DirectoryTestData}\\${arg1}
-    Set Suite Variable    ${DirectoryTEMP}    ${DirectoryTEMP}\\${DATEFILE}${arg1}
-    [Return]    ${DirectoryTEMP}
-
-Write Return Status
-    Open Excel    ${DirectoryTestData}
-    Log    ${ListStatus}=>${StatusTC}
-    ${Index}    Get Index From List    ${DATA}    ${ListStatus}
-    Put String To Cell    ${SheetNames}    ${Index}    @{DATA}[0]    ${StatusTC}
-    ${Local}    Remove String    ${DirectoryTestData}    .xls
-    Save Excel    ${Local}_Result.xls
-
-Skip Status Execution
-    Pass Execution If    '${ListStatus}'=='No Test'    ${ListStatus}
-    Pass Execution If    '${ListStatus}'=='PASS'    ${ListStatus}
-Allow Permission
-    Mobile.Click button    @{AllowButton}
-
-Turn On Wifi
-    Mobile.Scroll down
-    ${Return}    Run Keyword And Ignore Error    Wait Until Page Contains Element    @{WIFI_Off}
-    Run Keyword If    '@{Return}[0]'=='PASS'    Run Keyword    Mobile.Click button    @{WIFI_Off}
-    ${Return}    Run Keyword And Ignore Error    Wait Until Page Contains Element    @{Cellular_On}
-    Run Keyword If    '@{Return}[0]'=='PASS'    Run Keyword    Mobile.Click button    @{Cellular_On}
-    Mobile.Scroll top
-    Mobile.Sleep    seconds=5
-
-Turn On Cellular
-    Mobile.Scroll down
-    ${Return}    Run Keyword And Ignore Error    Wait Until Page Contains Element    @{WIFI_On}
-    Run Keyword If    '@{Return}[0]'=='PASS'    Run Keyword    Mobile.Click element    @{WIFI_On}
-    ${Return}    Run Keyword And Ignore Error    Wait Until Page Contains Element    @{Cellular_Off}
-    Run Keyword If    '@{Return}[0]'=='PASS'    Run Keyword    Mobile.Click element    @{Cellular_Off}
-    Mobile.Scroll top
-    Mobile.Sleep    seconds=5
-
-Get OTP Fail
-    @{Int}    Sub String    123456
-    : FOR    ${Index}    IN    @{Int}
-    \    Mobile.Click button    ${Index}
-
-Get OTP Pass
-    Mobile.Scroll down
-    ${OTP}    Mobile.Get message    OTP
-    ${GetOTP}    Sub Regexp Matches    ${OTP}    ${SPACE}(......)${SPACE}
-    @{GetOTP}    Sub String    ${GetOTP}
-    Mobile.Scroll top
-    : FOR    ${Index}    IN    @{GetOTP}
-    \    Mobile.Click button    ${Index}
-
-
-    # Exxel
-
-    Excel.Column Data Excel
+Excel.Column Data Excel
     [Arguments]    ${ListHeader}    ${CheckHeader}    ${CheckValue}
     ${Int}    Get Index From List    ${ListHeader}    ${CheckHeader}
     ${Count}    Set Variable    0
@@ -238,7 +128,7 @@ Excel.Log Set Variable
     \    ${String}    Convert To Lowercase    ${String}
     \    Log To Consoles    ${String} => '${excel.${String}}'
 
-Excel.Open Excel File
+Excel.Open Excel Files
     [Arguments]    ${FileName}
     ${DirectoryTEMP}    Excel.Temp Excel File    ${FileName}
     Log To Consoles    <<< OPEN EXCLE >>>
@@ -273,10 +163,13 @@ Excel.Row Data Excel
 
 Excel.Temp Excel File
     [Arguments]    ${arg1}
-    ${DirectoryTestData}    Replace String    ${CURDIR}    Configurations    TestData\\${arg1}
+    ${DATEFILE}    Get Current Date
+    ${DATEFILE}    Convert Date    ${DATEFILE}    epoch
+    ${DirectoryTestData}    Replace String    ${CURDIR}    Resource\\GlobalKeywords    TestData
     ${DirectoryTEMP}    Replace String    ${DirectoryTestData}    TestData    Temp
-    Copy File    ${DirectoryTestData}    ${DirectoryTEMP}
-    Set Suite Variable    ${DirectoryTestData}
+    Copy File    ${DirectoryTestData}\\${arg1}    ${DirectoryTEMP}\\${DATEFILE}${arg1}
+    Set Suite Variable    ${DirectoryTestData}    ${DirectoryTestData}\\${arg1}
+    Set Suite Variable    ${DirectoryTEMP}    ${DirectoryTEMP}\\${DATEFILE}${arg1}
     [Return]    ${DirectoryTEMP}
 
 Excel.Write Return Status
@@ -286,22 +179,31 @@ Excel.Write Return Status
     ${Local}    Remove String    ${DirectoryTestData}    .xls
     Save Excel    ${Local}_Result.xls
 
-Skip Status Execute
-    Pass Execution If    '${ListStatus}'=='No Test'    ${ListStatus}
-    Run Keyword If    '${ListStatus}'=='PASS'    ${ListStatus}
-
-
-# Functions
-
 Get Date Time
     [Arguments]    ${Imgname}
     ${DateTime}    Get Current Date
     ${Date}    Convert Date    ${DateTime}    result_format=%Y-%m-%d
-    ${Directory}    Replace String    ${CURDIR}    Configurations    Result/${Date}
+    ${Directory}    Replace String    ${CURDIR}    Resource\\GlobalKeywords    Result/${Date}
     Set Suite Variable    ${Directory}
     ${Date}    Replace String    ${DateTime}-${Imgname}    :    -
     ${Date}    Replace String    ${Date}    ${SPACE}    -
     Set Suite Variable    ${Date}
+
+Get OTP Fail
+    @{Int}    Sub String    123456
+    : FOR    ${Index}    IN    @{Int}
+    \    Mobile.Click button    ${Index}
+
+Get OTP Pass
+    [Arguments]    ${ListHeader}    ${CheckHeader}    ${CheckValue}
+    Mobile.Scroll down
+    ${OTP}    Mobile.Get message    OTP
+    ${GetOTP}    Sub Regexp Matches    ${OTP}    ${SPACE}(......)${SPACE}
+    @{GetOTP}    Sub String    ${GetOTP}
+    Mobile.Scroll top
+    : FOR    ${Index}    IN    @{GetOTP}
+    \    Mobile.Click button    ${Index}
+    # Exxel
 
 Get Webelement by value
     [Arguments]    ${Wording}
@@ -313,11 +215,58 @@ Get Webelement by xPath
     ${xPath}    Get Webelement    ${xPathID}
     [Return]    ${xPath}
 
+Ignore Error Page Contains
+    [Arguments]    ${xPathID}    ${Sec}=5
+    ${Return}    Run Keyword And Ignore Error    Wait Until Page Contains Element    ${xPathID}    ${Sec}
+    ${Return}    Set Variable    @{Return}[0]
+    [Return]    ${Return}
+
+# Import Resource EN Language
+#     [Documentation]    TH or EN
+#     Log To Consoles    Import Resource EN Language
+#     Import Resource    ../../TestData/Wordings/EN_Language.robot
+
+# Import Resource TH Language
+#     [Documentation]    TH or EN
+#     Log To Consoles    Import Resource TH Language
+#     Import Resource    ../../TestData/Wordings/TH_Language.robot
+    #Web
+
+Log To Consoles
+    [Arguments]    ${Message}
+    Log    ${Message}
+    Log To Console    ${Message}
+    Time Stamp Logs    ${Message}
+
+Remove All String
+    [Arguments]    ${Index}    @{Removables}
+    ${Return}    Remove String    ${Index}    @{Removables}
+    [Return]    ${Return}
+
+Replace All String
+    [Arguments]    ${Index}    ${Wording}    ${Replace}
+    ${Return}    Replace String    ${Index}    ${Wording}    ${Replace}
+    [Return]    ${Return}
+
 Replace Xpath
     [Arguments]    ${xPathID}
     Set Library Search Order    AppiumLibrary
     ${xPath}    Get Webelement    ${xPathID}
     [Return]    ${xPath}
+
+Runing Test Setup
+    Excel.Read Data
+    # Log Start
+
+Runing Test Teardown
+    Function result
+    Excel.Write Return Status
+    # Object_Center
+
+Skip Status Execute
+    Pass Execution If    '${ListStatus}'=='No Test'    ${ListStatus}
+    Run Keyword If    '${ListStatus}'=='PASS'    ${ListStatus}
+    # Functions
 
 Sub Regexp Matches
     [Arguments]    ${Message}    ${Pattern}
@@ -336,66 +285,29 @@ Sub String
     ${SubSprings}    Get Regexp Matches    ${Message}    (.)    1
     [Return]    ${SubSprings}
 
-Log To Consoles
-    [Arguments]    ${Message}
-    Log    ${Message}
-    Log To Console    ${Message}
-    Time Stamp Logs    ${Message}
-
-Ignore Error Page Contains
-    [Arguments]    ${xPathID}    ${Sec}=5
-    ${Return}    Run Keyword And Ignore Error    Wait Until Page Contains Element    ${xPathID}    ${Sec}
-    ${Return}    Set Variable    @{Return}[0]
-    [Return]    ${Return}
-
-Remove All String
-    [Arguments]    ${Index}    @{Removables}
-    ${Return}    Remove String    ${Index}    @{Removables}
-    [Return]    ${Return}
-
-Replace All String
-    [Arguments]    ${Index}    ${Wording}    ${Replace}
-    ${Return}    Replace String    ${Index}    ${Wording}    ${Replace}
-    [Return]    ${Return}
-
-Calculate
-    [Arguments]    ${Sentence}
-    ${Return}    Evaluate    ${Sentence}
-    [Return]    ${Return}
-
-Conditions
-    [Arguments]    ${FirstCondition}    ${Opaeration}    ${FinalCondition}
-    ${Return}    Run Keyword And Ignore Error    Run Keyword If    "${FirstCondition}"${Opaeration}"${FinalCondition}"    Run Keyword    Log To Consoles    "${FirstCondition}"${Opaeration}"${FinalCondition}"
-    ...    ELSE    Run Keyword    Log To Consoles    "${FirstCondition}"${Opaeration}"${FinalCondition}"
-    Should Be Equal    @{Return}[0]    PASS
-
 Time Stamp Logs
     [Arguments]    ${MessageLog}
     ${TimeStamp}    Get Current Date
-    ${Directory}    Replace String    ${CURDIR}    Configurations    Result
+    ${Directory}    Replace String    ${CURDIR}    Resource\\GlobalKeywords    Result
     Append To File    ${Directory}/Debug.log    [DEBUG][${TimeStamp}][${MessageLog}]${\n}
 
-Runing Test Setup
-    Excel.Read Data
-    Log Start
+Turn On Cellular
+    Mobile.Scroll down
+    ${Return}    Run Keyword And Ignore Error    Wait Until Page Contains Element    @{WIFI_On}
+    Run Keyword If    '@{Return}[0]'=='PASS'    Run Keyword    Mobile.Click element    @{WIFI_On}
+    ${Return}    Run Keyword And Ignore Error    Wait Until Page Contains Element    @{Cellular_Off}
+    Run Keyword If    '@{Return}[0]'=='PASS'    Run Keyword    Mobile.Click element    @{Cellular_Off}
+    Mobile.Scroll top
+    Mobile.Sleep    seconds=5
 
-Runing Test Teardown
-    Function result
-    Excel.Write Return Status
-
-    # Object_Center
-
-Import Resource EN Language
-    [Documentation]    TH or EN
-    Log To Consoles    Import Resource EN Language
-    Import Resource    ${CURDIR}/Wordings/EN_Language.robot
-
-Import Resource TH Language
-    [Documentation]    TH or EN
-    Log To Consoles    Import Resource TH Language
-    Import Resource    ${CURDIR}/Wordings/TH_Language.robot
-
-    #Web
+Turn On Wifi
+    Mobile.Scroll down
+    ${Return}    Run Keyword And Ignore Error    Wait Until Page Contains Element    @{WIFI_Off}
+    Run Keyword If    '@{Return}[0]'=='PASS'    Run Keyword    Mobile.Click button    @{WIFI_Off}
+    ${Return}    Run Keyword And Ignore Error    Wait Until Page Contains Element    @{Cellular_On}
+    Run Keyword If    '@{Return}[0]'=='PASS'    Run Keyword    Mobile.Click button    @{Cellular_On}
+    Mobile.Scroll top
+    Mobile.Sleep    seconds=5
 
 Web.Capture Screenshot
     [Arguments]    ${Imgname}=CaptureScreenshot
@@ -403,8 +315,9 @@ Web.Capture Screenshot
     Log To Consoles    ${Imgname}
     Capture Page Screenshot
     Get Date Time    ${Imgname}
-    Append To File    ${Directory}/${TEST_NAME}/README.md    ${EMPTY}
-    Capture Page Screenshot    ${Directory}/${TEST_NAME}/${Date}.png
+    ${Directorys}    Replace String    ${Directory}    Resource\\GlobalKeywords    TestResults
+    Append To File    ${Directorys}/${TEST_NAME}/README.md    ${EMPTY}
+    Capture Page Screenshot    ${Directorys}/${TEST_NAME}/${Date}.png
     Log To Consoles    - PASS\n
 
 Web.Check screen wording
@@ -415,17 +328,6 @@ Web.Check screen wording
     \    ${Return}    Run Keyword And Ignore Error    Wait Until Page Contains    ${index}    30s
     \    Should Be Equal    @{Return}[0]    PASS
     Web.Capture Screenshot
-    Log To Consoles    - PASS\n
-
-Web.Enter
-    [Arguments]    ${Attribute}    ${Value}
-    Set Library Search Order    Selenium2Library
-    Log To Consoles    Enter
-    ${xPathID}    Web.Convert Attribute To xPath    ${Attribute}    ${Value}
-    Wait Until Page Contains Element    ${xPathID}
-    Web.Capture Screenshot
-    ${xPath}    Get WebElement    ${xPathID}
-    Press Key    ${xPath}    \\13
     Log To Consoles    - PASS\n
 
 Web.Click button
@@ -477,6 +379,17 @@ Web.Convert Attribute To xPath
     Log To Consoles    - PASS\n
     [Return]    ${xPath}
 
+Web.Enter
+    [Arguments]    ${Attribute}    ${Value}
+    Set Library Search Order    Selenium2Library
+    Log To Consoles    Enter
+    ${xPathID}    Web.Convert Attribute To xPath    ${Attribute}    ${Value}
+    Wait Until Page Contains Element    ${xPathID}
+    Web.Capture Screenshot
+    ${xPath}    Get WebElement    ${xPathID}
+    Press Key    ${xPath}    \\13
+    Log To Consoles    - PASS\n
+
 Web.Get List WebElements
     [Arguments]    ${Attribute}    ${Value}    ${Position}=1
     Set Library Search Order    Selenium2Library
@@ -509,7 +422,7 @@ Web.Input data
     Web.Capture Screenshot
     ${xPath}    Get Webelement by xPath    ${xPathID}
     Input Text    ${xPath}    ${Message}
-    Wait Until Page Contains    ${Message}
+    # Wait Until Page Contains    ${Message}
     Log To Consoles    - PASS\n
 
 Web.Kill browser
@@ -545,14 +458,64 @@ Web.Select Frame List
     : FOR    ${Index}    IN    @{xPathList}
     \    Select Frame    ${Index}
     Log To Consoles    - PASS\n
+    # Object_Center
 
-# Object_Center
-Import Resource EN Language
-    [Documentation]    TH or EN
-    Log To Consoles    Import Resource EN Language
-    Import Resource    ${CURDIR}/Wordings/EN_Language.robot
+Write Return Status
+    Open Excel    ${DirectoryTestData}
+    Log    ${ListStatus}=>${StatusTC}
+    ${Index}    Get Index From List    ${DATA}    ${ListStatus}
+    Put String To Cell    ${SheetNames}    ${Index}    @{DATA}[0]    ${StatusTC}
+    ${Local}    Remove String    ${DirectoryTestData}    .xls
+    Save Excel    ${Local}_Result.xls
 
-Import Resource TH Language
-    [Documentation]    TH or EN
-    Log To Consoles    Import Resource TH Language
-    Import Resource    ${CURDIR}/Wordings/TH_Language.robot
+Function result
+    : FOR    ${Index}    IN    No Test    PASS
+    \    Run Keyword If    '${ListStatus}'=='${Index}'    Run Keyword    Log Pass    ${Index}
+    : FOR    ${Index}    IN    Run    FAIL
+    \    Run Keyword If    '${ListStatus}'=='${Index}'    Run Keyword    Log Fail    ${TEST_STATUS}
+    Log files
+    Log Variables
+
+Log files
+    ${DateTime}    Get Current Date
+    ${Date}    Convert Date    ${DateTime}    result_format=%Y-%m-%d
+    ${Directory}    Replace String    ${CURDIR}    Resource\\GlobalKeywords    Result/${Date}
+    ${h}    ${m}    ${s}    @{time}    Get Modified Time    ${Directory}    hour,min,sec
+    File Result    ${Directory}/${TEST_NAME}    ${Directory}/${h}-${m}-${s}_${StatusTC}_${TEST_NAME}
+    Append File Result    ${Directory}/LogTest.txt    ${DateTime}\t    ${StatusTC}\t    ${h}-${m}-${s}_${TEST_NAME}\t    ${\n}
+    Append File Result    ${Directory}/TestResult.xls    ${EMPTY}
+    @{GetFileSize}    Get Modified Time    ${Directory}/TestResult.xls    year,month,day
+    Run Keyword If    '@{GetFileSize}[0]-@{GetFileSize}[1]-@{GetFileSize}[2]'<'${Date}'    Run Keyword    Append File Result    ${Directory}/TestResult.xls    Execute Date Time\t    Test Case name\t
+    ...    TestResult\t    Status Execuet\t    ${\n}
+    Append File Result    ${Directory}/TestResult.xls    '${DateTime}\t    ${TEST_NAME}\t    ${h}-${m}-${s}_${TEST_NAME}\t    ${StatusTC}\t    ${\n}
+    Log To Console    End : Row Data \n
+
+Log Pass
+    [Arguments]    ${Logs}
+    Get Date Time    ${EMPTY}
+    ${Directorys}    Replace String    ${Directory}    Resource\\GlobalKeywords    TestResults
+    Append To File    ${Directorys}/${TEST_NAME}/README.md    ${EMPTY}
+    Set Suite Variable    ${StatusTC}    ${Logs}
+
+Log Fail
+    [Arguments]    ${Logs}
+    Get Date Time    ${EMPTY}
+    ${Directorys}    Replace String    ${Directory}    Resource\\GlobalKeywords    TestResults
+    Append To File    ${Directorys}/${TEST_NAME}/README.md    ${EMPTY}
+    Set Suite Variable    ${StatusTC}    ${Logs}
+
+Append File Result
+    [Arguments]    ${DirectoryTestResult}    @{Message}
+    : FOR    ${Index}    IN    @{Message}
+    \    Append To File    ${DirectoryTestResult}    ${Index}
+
+File Result
+    [Arguments]    ${Source}    ${Destination}
+    Copy Directory    ${Source}    ${Destination}
+    Empty Directory    ${Source}
+    Remove Directory    ${Source}
+
+Log Start
+    Get Date Time    ${EMPTY}
+    ${Directorys}    Replace String    ${Directory}    Resource\\GlobalKeywords    TestResults
+    Append To File    ${Directorys}/${TEST_NAME}/README.md    ${EMPTY}
